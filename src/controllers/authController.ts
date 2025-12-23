@@ -39,9 +39,30 @@ export const register = async (
             user,
             token,
         })
-    } catch (e) {
+    } catch (e: any) {
         console.error(`Registration error`, e)
-        res.status(500).json({ error : `Failed to create user`})
+        
+        // Handle database constraint violations (unique email/username)
+        if (e?.code === '23505') {
+            const field = e?.detail?.includes('email') ? 'email' : 'username'
+            return res.status(409).json({ 
+                error: `User with this ${field} already exists` 
+            })
+        }
+        
+        // Handle other database errors
+        if (e?.code) {
+            return res.status(500).json({ 
+                error: 'Database error',
+                details: e.message 
+            })
+        }
+        
+        // Handle validation or other errors
+        res.status(500).json({ 
+            error: 'Failed to create user',
+            details: e?.message || 'Unknown error'
+        })
     }
 }
 
@@ -56,7 +77,7 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Invalid Credentials'})
         }
         
-        const isValidPassword = comparePasswords(password, user.password)
+        const isValidPassword = await comparePasswords(password, user.password)
 
         if (!isValidPassword) {
             return res.status(401).json({ error: 'Invalid Credentials' })

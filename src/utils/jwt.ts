@@ -1,4 +1,4 @@
-import { SignJWT, type JWTPayload } from 'jose'
+import { jwtVerify, SignJWT, type JWTPayload } from 'jose'
 import { createSecretKey } from 'crypto'
 import env from '../../env.ts'
 
@@ -17,4 +17,11 @@ export const generateToken = (payload: JwtPayload) => {
         .setIssuedAt()
         .setExpirationTime(env.JWT_EXPIRES_IN || '7d')
         .sign(secretKey)
+}
+
+export const verifyToken = async (token :string): Promise<JwtPayload> => {
+    const secretKey = createSecretKey(env.JWT_SECRET, 'utf8')
+    const {payload} = await jwtVerify(token, secretKey)
+
+    return payload as JwtPayload
 }
